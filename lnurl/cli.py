@@ -1,12 +1,14 @@
-""" lnurl CLI """
-import sys
-import json
-import click
-import requests
+"""lnurl CLI"""
 
-from .types import Lnurl
-from .core import handle as handle_lnurl
+import asyncio
+import sys
+
+import click
+
 from .core import encode as encode_lnurl
+from .core import execute as execute_lnurl
+from .core import handle as handle_lnurl
+from .types import Lnurl
 
 # disable tracebacks on exceptions
 sys.tracebacklimit = 0
@@ -45,29 +47,20 @@ def handle(lnurl):
     """
     handle a LNURL
     """
-    decoded = handle_lnurl(lnurl)
+    decoded = asyncio.run(handle_lnurl(lnurl))
     click.echo(decoded.json())
 
 
 @click.command()
 @click.argument("lnurl", type=str)
-@click.argument("amount", type=int)
-def payment_request(lnurl, amount):
+@click.argument("msat_or_login", type=str, required=False)
+def execute(lnurl, msat_or_login):
     """
-    make a payment_request
+    execute a LNURL request
     """
-    res = handle_lnurl(lnurl)
-    decoded = res.dict()
-
-    if decoded["tag"] and decoded["tag"] == "payRequest":
-        if decoded["minSendable"] <= amount <= decoded["maxSendable"]:
-            res = requests.get(decoded["callback"] + "?amount=" + str(amount))
-            res.raise_for_status()
-            return click.echo(json.dumps(res.json()))
-        else:
-            click.echo("Amount not in range.")
-    else:
-        click.echo("Not a payRequest:")
+    if not msat_or_login:
+        raise ValueError("You must provide either an amount_msat or a login_id.")
+    res = asyncio.run(execute_lnurl(lnurl, msat_or_login))
     click.echo(res.json())
 
 
@@ -76,7 +69,7 @@ def main():
     command_group.add_command(encode)
     command_group.add_command(decode)
     command_group.add_command(handle)
-    command_group.add_command(payment_request)
+    command_group.add_command(execute)
     command_group()
 
 

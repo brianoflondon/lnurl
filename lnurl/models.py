@@ -1,6 +1,7 @@
 import math
 from typing import List, Literal, Optional, Union
 
+from bolt11 import MilliSatoshi
 from pydantic import BaseModel, Field, validator
 
 from .exceptions import LnurlResponseException
@@ -12,7 +13,6 @@ from .types import (
     LightningNodeUri,
     LnurlPayMetadata,
     Max144Str,
-    MilliSatoshi,
     OnionUrl,
 )
 
@@ -45,6 +45,7 @@ class UrlAction(LnurlPaySuccessAction):
 
 
 class LnurlResponseModel(BaseModel):
+
     class Config:
         allow_population_by_field_name = True
 
@@ -101,8 +102,8 @@ class LnurlHostedChannelResponse(LnurlResponseModel):
 class LnurlPayResponse(LnurlResponseModel):
     tag: Literal["payRequest"] = "payRequest"
     callback: Union[ClearnetUrl, OnionUrl, DebugUrl]
-    min_sendable: MilliSatoshi = Field(..., alias="minSendable")
-    max_sendable: MilliSatoshi = Field(..., alias="maxSendable")
+    min_sendable: MilliSatoshi = Field(..., alias="minSendable", gt=0)
+    max_sendable: MilliSatoshi = Field(..., alias="maxSendable", gt=0)
     metadata: LnurlPayMetadata
 
     @validator("max_sendable")
@@ -137,14 +138,15 @@ class LnurlPayActionResponse(LnurlResponseModel):
     pr: LightningInvoice
     success_action: Optional[Union[MessageAction, UrlAction, AesAction]] = Field(None, alias="successAction")
     routes: List[List[LnurlPayRouteHop]] = []
+    verify: Optional[str] = None
 
 
 class LnurlWithdrawResponse(LnurlResponseModel):
     tag: Literal["withdrawRequest"] = "withdrawRequest"
     callback: Union[ClearnetUrl, OnionUrl, DebugUrl]
     k1: str
-    min_withdrawable: MilliSatoshi = Field(..., alias="minWithdrawable")
-    max_withdrawable: MilliSatoshi = Field(..., alias="maxWithdrawable")
+    min_withdrawable: MilliSatoshi = Field(..., alias="minWithdrawable", gt=0)
+    max_withdrawable: MilliSatoshi = Field(..., alias="maxWithdrawable", gt=0)
     default_description: str = Field("", alias="defaultDescription")
 
     @validator("max_withdrawable")
