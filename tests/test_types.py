@@ -1,7 +1,7 @@
 from typing import Union
 
 import pytest
-from pydantic import ValidationError, parse_obj_as
+from pydantic.v1 import ValidationError, parse_obj_as
 
 from lnurl.helpers import _lnurl_clean
 from lnurl.types import (
@@ -23,7 +23,10 @@ class TestUrl:
         ["service.io:443", "service.io:9000"],
     )
     def test_parameters(self, hostport):
-        url = parse_obj_as(Union[DebugUrl, OnionUrl, ClearnetUrl], f"https://{hostport}/?q=3fc3645b439ce8e7&test=ok")
+        url = parse_obj_as(
+            Union[DebugUrl, OnionUrl, ClearnetUrl],
+            f"https://{hostport}/?q=3fc3645b439ce8e7&test=ok",
+        )
         assert url.host == "service.io"
         assert url.base == f"https://{hostport}/"
         assert url.query_params == {"q": "3fc3645b439ce8e7", "test": "ok"}
@@ -106,7 +109,10 @@ class TestLightningNode:
         assert node.ip == "ip_address"
         assert node.port == "port_number"
 
-    @pytest.mark.parametrize("uri", ["https://service.io/node", "node_key@ip_address", "ip_address:port_number"])
+    @pytest.mark.parametrize(
+        "uri",
+        ["https://service.io/node", "node_key@ip_address", "ip_address:port_number"],
+    )
     def test_invalid_data(self, uri):
         with pytest.raises(ValidationError):
             parse_obj_as(LightningNodeUri, uri)
@@ -134,11 +140,18 @@ class TestLnurl:
     )
     def test_valid(self, lightning, url):
         lnurl = Lnurl(lightning)
-        assert lnurl == lnurl.bech32 == _lnurl_clean(lightning) == parse_obj_as(Lnurl, lightning)
+        assert (
+            lnurl
+            == lnurl.bech32
+            == _lnurl_clean(lightning)
+            == parse_obj_as(Lnurl, lightning)
+        )
         assert lnurl.bech32.hrp == "lnurl"
         assert lnurl.url == url
         assert lnurl.url.base == "https://service.io:443/"
-        assert lnurl.url.query_params == {"q": "3fc3645b439ce8e7f2553a69e5267081d96dcd340693afabe04be7b0ccd178df"}
+        assert lnurl.url.query_params == {
+            "q": "3fc3645b439ce8e7f2553a69e5267081d96dcd340693afabe04be7b0ccd178df"
+        }
         assert lnurl.is_login is False
 
     @pytest.mark.parametrize(
@@ -159,8 +172,14 @@ class TestLnurlPayMetadata:
         "metadata, image_type",
         [
             ('[["text/plain", "main text"]]', None),
-            ('[["text/plain", "main text"], ["image/jpeg;base64", "base64encodedimage"]]', "jpeg"),
-            ('[["text/plain", "main text"], ["image/png;base64", "base64encodedimage"]]', "png"),
+            (
+                '[["text/plain", "main text"], ["image/jpeg;base64", "base64encodedimage"]]',
+                "jpeg",
+            ),
+            (
+                '[["text/plain", "main text"], ["image/png;base64", "base64encodedimage"]]',
+                "png",
+            ),
         ],
     )
     def test_valid(self, metadata, image_type):
