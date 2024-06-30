@@ -2,7 +2,7 @@ import math
 from typing import List, Literal, Optional, Union
 
 from bolt11 import MilliSatoshi
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from .exceptions import LnurlResponseException
 from .types import (
@@ -45,9 +45,7 @@ class UrlAction(LnurlPaySuccessAction):
 
 
 class LnurlResponseModel(BaseModel):
-
-    class Config:
-        allow_population_by_field_name = True
+    model_config = ConfigDict(populate_by_name=True)
 
     def dict(self, **kwargs):
         kwargs.setdefault("by_alias", True)
@@ -96,7 +94,7 @@ class LnurlHostedChannelResponse(LnurlResponseModel):
     tag: Literal["hostedChannelRequest"] = "hostedChannelRequest"
     uri: LightningNodeUri
     k1: str
-    alias: Optional[str]
+    alias: Optional[str] = None
 
 
 class LnurlPayResponse(LnurlResponseModel):
@@ -106,7 +104,9 @@ class LnurlPayResponse(LnurlResponseModel):
     max_sendable: MilliSatoshi = Field(..., alias="maxSendable", gt=0)
     metadata: LnurlPayMetadata
 
-    @validator("max_sendable")
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
+    @field_validator("max_sendable")
     def max_less_than_min(cls, value, values, **kwargs):  # noqa
         if "min_sendable" in values and value < values["min_sendable"]:
             raise ValueError("`max_sendable` cannot be less than `min_sendable`.")
@@ -136,7 +136,9 @@ class LnurlPayResponseComment(LnurlPayResponse):
 
 class LnurlPayActionResponse(LnurlResponseModel):
     pr: LightningInvoice
-    success_action: Optional[Union[MessageAction, UrlAction, AesAction]] = Field(None, alias="successAction")
+    success_action: Optional[Union[MessageAction, UrlAction, AesAction]] = Field(
+        None, alias="successAction"
+    )
     routes: List[List[LnurlPayRouteHop]] = []
     verify: Optional[str] = None
 
@@ -149,10 +151,14 @@ class LnurlWithdrawResponse(LnurlResponseModel):
     max_withdrawable: MilliSatoshi = Field(..., alias="maxWithdrawable", gt=0)
     default_description: str = Field("", alias="defaultDescription")
 
-    @validator("max_withdrawable")
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
+    @field_validator("max_withdrawable")
     def max_less_than_min(cls, value, values, **kwargs):  # noqa
         if "min_withdrawable" in values and value < values["min_withdrawable"]:
-            raise ValueError("`max_withdrawable` cannot be less than `min_withdrawable`.")
+            raise ValueError(
+                "`max_withdrawable` cannot be less than `min_withdrawable`."
+            )
         return value
 
     @property
