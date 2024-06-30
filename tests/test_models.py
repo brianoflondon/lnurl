@@ -1,7 +1,7 @@
 import json
 
 import pytest
-from pydantic import ValidationError
+from pydantic.v1 import ValidationError
 
 from lnurl.models import (
     LnurlChannelResponse,
@@ -37,7 +37,14 @@ class TestLnurlSuccessResponse:
 
 class TestLnurlChannelResponse:
     @pytest.mark.parametrize(
-        "d", [{"uri": "node_key@ip_address:port_number", "callback": "https://service.io/channel", "k1": "c3RyaW5n"}]
+        "d",
+        [
+            {
+                "uri": "node_key@ip_address:port_number",
+                "callback": "https://service.io/channel",
+                "k1": "c3RyaW5n",
+            }
+        ],
     )
     def test_channel_response(self, d):
         res = LnurlChannelResponse(**d)
@@ -47,9 +54,21 @@ class TestLnurlChannelResponse:
     @pytest.mark.parametrize(
         "d",
         [
-            {"uri": "invalid", "callback": "https://service.io/channel", "k1": "c3RyaW5n"},
-            {"uri": "node_key@ip_address:port_number", "callback": "invalid", "k1": "c3RyaW5n"},
-            {"uri": "node_key@ip_address:port_number", "callback": "https://service.io/channel", "k1": None},
+            {
+                "uri": "invalid",
+                "callback": "https://service.io/channel",
+                "k1": "c3RyaW5n",
+            },
+            {
+                "uri": "node_key@ip_address:port_number",
+                "callback": "invalid",
+                "k1": "c3RyaW5n",
+            },
+            {
+                "uri": "node_key@ip_address:port_number",
+                "callback": "https://service.io/channel",
+                "k1": None,
+            },
         ],
     )
     def test_invalid_data(self, d):
@@ -58,14 +77,20 @@ class TestLnurlChannelResponse:
 
 
 class TestLnurlHostedChannelResponse:
-    @pytest.mark.parametrize("d", [{"uri": "node_key@ip_address:port_number", "k1": "c3RyaW5n"}])
+    @pytest.mark.parametrize(
+        "d", [{"uri": "node_key@ip_address:port_number", "k1": "c3RyaW5n"}]
+    )
     def test_channel_response(self, d):
         res = LnurlHostedChannelResponse(**d)
         assert res.ok
         assert res.dict() == {**{"tag": "hostedChannelRequest", "alias": None}, **d}
 
     @pytest.mark.parametrize(
-        "d", [{"uri": "invalid", "k1": "c3RyaW5n"}, {"uri": "node_key@ip_address:port_number", "k1": None}]
+        "d",
+        [
+            {"uri": "invalid", "k1": "c3RyaW5n"},
+            {"uri": "node_key@ip_address:port_number", "k1": None},
+        ],
     )
     def test_invalid_data(self, d):
         with pytest.raises(ValidationError):
@@ -79,15 +104,27 @@ class TestLnurlPayResponse:
     @pytest.mark.parametrize(
         "d",
         [
-            {"callback": "https://service.io/pay", "min_sendable": 1000, "max_sendable": 2000, "metadata": metadata},
-            {"callback": "https://service.io/pay", "minSendable": 1000, "maxSendable": 2000, "metadata": metadata},
+            {
+                "callback": "https://service.io/pay",
+                "min_sendable": 1000,
+                "max_sendable": 2000,
+                "metadata": metadata,
+            },
+            {
+                "callback": "https://service.io/pay",
+                "minSendable": 1000,
+                "maxSendable": 2000,
+                "metadata": metadata,
+            },
         ],
     )
     def test_success_response(self, d):
         res = LnurlPayResponse(**d)
         assert res.ok
         assert (
-            res.json() == res.json(by_alias=True) == '{"tag": "payRequest", "callback": "https://service.io/pay", '
+            res.json()
+            == res.json(by_alias=True)
+            == '{"tag": "payRequest", "callback": "https://service.io/pay", '
             f'"minSendable": 1000, "maxSendable": 2000, "metadata": {json.dumps(metadata)}}}'
         )
         assert (
@@ -112,11 +149,31 @@ class TestLnurlPayResponse:
     @pytest.mark.parametrize(
         "d",
         [
-            {"callback": "invalid", "min_sendable": 1000, "max_sendable": 2000, "metadata": metadata},
+            {
+                "callback": "invalid",
+                "min_sendable": 1000,
+                "max_sendable": 2000,
+                "metadata": metadata,
+            },
             {"callback": "https://service.io/pay"},  # missing fields
-            {"callback": "https://service.io/pay", "min_sendable": 0, "max_sendable": 0, "metadata": metadata},  # 0
-            {"callback": "https://service.io/pay", "minSendable": 100, "maxSendable": 10, "metadata": metadata},  # max
-            {"callback": "https://service.io/pay", "minSendable": -90, "maxSendable": -10, "metadata": metadata},
+            {
+                "callback": "https://service.io/pay",
+                "min_sendable": 0,
+                "max_sendable": 0,
+                "metadata": metadata,
+            },  # 0
+            {
+                "callback": "https://service.io/pay",
+                "minSendable": 100,
+                "maxSendable": 10,
+                "metadata": metadata,
+            },  # max
+            {
+                "callback": "https://service.io/pay",
+                "minSendable": -90,
+                "maxSendable": -10,
+                "metadata": metadata,
+            },
         ],
     )
     def test_invalid_data(self, d):
@@ -148,7 +205,9 @@ class TestLnurlPayResponseComment:
         res = LnurlPayResponseComment(**d)
         assert res.ok
         assert (
-            res.json() == res.json(by_alias=True) == '{"tag": "payRequest", "callback": "https://service.io/pay", '
+            res.json()
+            == res.json(by_alias=True)
+            == '{"tag": "payRequest", "callback": "https://service.io/pay", '
             f'"minSendable": 1000, "maxSendable": 2000, "metadata": {json.dumps(metadata)}, '
             '"commentAllowed": 555}'
         )
@@ -176,11 +235,31 @@ class TestLnurlPayResponseComment:
     @pytest.mark.parametrize(
         "d",
         [
-            {"callback": "invalid", "min_sendable": 1000, "max_sendable": 2000, "metadata": metadata},
+            {
+                "callback": "invalid",
+                "min_sendable": 1000,
+                "max_sendable": 2000,
+                "metadata": metadata,
+            },
             {"callback": "https://service.io/pay"},  # missing fields
-            {"callback": "https://service.io/pay", "min_sendable": 0, "max_sendable": 0, "metadata": metadata},  # 0
-            {"callback": "https://service.io/pay", "minSendable": 100, "maxSendable": 10, "metadata": metadata},  # max
-            {"callback": "https://service.io/pay", "minSendable": -90, "maxSendable": -10, "metadata": metadata},
+            {
+                "callback": "https://service.io/pay",
+                "min_sendable": 0,
+                "max_sendable": 0,
+                "metadata": metadata,
+            },  # 0
+            {
+                "callback": "https://service.io/pay",
+                "minSendable": 100,
+                "maxSendable": 10,
+                "metadata": metadata,
+            },  # max
+            {
+                "callback": "https://service.io/pay",
+                "minSendable": -90,
+                "maxSendable": -10,
+                "metadata": metadata,
+            },
             {
                 "callback": "https://service.io/pay",
                 "minSendable": 100,
@@ -246,16 +325,34 @@ class TestLnurlWithdrawResponse:
     @pytest.mark.parametrize(
         "d",
         [
-            {"callback": "invalid", "k1": "c3RyaW5n", "min_withdrawable": 1000, "max_withdrawable": 2000},
-            {"callback": "https://service.io/withdraw", "k1": "c3RyaW5n"},  # missing fields
-            {"callback": "https://service.io/withdraw", "k1": "c3RyaW5n", "min_withdrawable": 0, "max_withdrawable": 0},
+            {
+                "callback": "invalid",
+                "k1": "c3RyaW5n",
+                "min_withdrawable": 1000,
+                "max_withdrawable": 2000,
+            },
+            {
+                "callback": "https://service.io/withdraw",
+                "k1": "c3RyaW5n",
+            },  # missing fields
+            {
+                "callback": "https://service.io/withdraw",
+                "k1": "c3RyaW5n",
+                "min_withdrawable": 0,
+                "max_withdrawable": 0,
+            },
             {
                 "callback": "https://service.io/withdraw",
                 "k1": "c3RyaW5n",
                 "minWithdrawable": 100,
                 "maxWithdrawable": 10,
             },
-            {"callback": "https://service.io/withdraw", "k1": "c3RyaW5n", "minWithdrawable": -9, "maxWithdrawable": -1},
+            {
+                "callback": "https://service.io/withdraw",
+                "k1": "c3RyaW5n",
+                "minWithdrawable": -9,
+                "maxWithdrawable": -1,
+            },
         ],
     )
     def test_invalid_data(self, d):
