@@ -140,18 +140,11 @@ class TestLnurl:
     )
     def test_valid(self, lightning, url):
         lnurl = Lnurl(lightning)
-        assert (
-            lnurl
-            == lnurl.bech32
-            == _lnurl_clean(lightning)
-            == parse_obj_as(Lnurl, lightning)
-        )
+        assert lnurl == lnurl.bech32 == _lnurl_clean(lightning) == parse_obj_as(Lnurl, lightning)
         assert lnurl.bech32.hrp == "lnurl"
         assert lnurl.url == url
         assert lnurl.url.base == "https://service.io:443/"
-        assert lnurl.url.query_params == {
-            "q": "3fc3645b439ce8e7f2553a69e5267081d96dcd340693afabe04be7b0ccd178df"
-        }
+        assert lnurl.url.query_params == {"q": "3fc3645b439ce8e7f2553a69e5267081d96dcd340693afabe04be7b0ccd178df"}
         assert lnurl.is_login is False
 
     @pytest.mark.parametrize(
