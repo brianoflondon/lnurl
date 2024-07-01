@@ -77,9 +77,7 @@ class TestLnurlChannelResponse:
 
 
 class TestLnurlHostedChannelResponse:
-    @pytest.mark.parametrize(
-        "d", [{"uri": "node_key@ip_address:port_number", "k1": "c3RyaW5n"}]
-    )
+    @pytest.mark.parametrize("d", [{"uri": "node_key@ip_address:port_number", "k1": "c3RyaW5n"}])
     def test_channel_response(self, d):
         res = LnurlHostedChannelResponse(**d)
         assert res.ok
@@ -122,9 +120,7 @@ class TestLnurlPayResponse:
         res = LnurlPayResponse(**d)
         assert res.ok
         assert (
-            res.json()
-            == res.json(by_alias=True)
-            == '{"tag": "payRequest", "callback": "https://service.io/pay", '
+            res.json() == res.json(by_alias=True) == '{"tag": "payRequest", "callback": "https://service.io/pay", '
             f'"minSendable": 1000, "maxSendable": 2000, "metadata": {json.dumps(metadata)}}}'
         )
         assert (
@@ -205,9 +201,7 @@ class TestLnurlPayResponseComment:
         res = LnurlPayResponseComment(**d)
         assert res.ok
         assert (
-            res.json()
-            == res.json(by_alias=True)
-            == '{"tag": "payRequest", "callback": "https://service.io/pay", '
+            res.json() == res.json(by_alias=True) == '{"tag": "payRequest", "callback": "https://service.io/pay", '
             f'"minSendable": 1000, "maxSendable": 2000, "metadata": {json.dumps(metadata)}, '
             '"commentAllowed": 555}'
         )

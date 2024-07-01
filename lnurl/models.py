@@ -136,9 +136,7 @@ class LnurlPayResponseComment(LnurlPayResponse):
 
 class LnurlPayActionResponse(LnurlResponseModel):
     pr: LightningInvoice
-    success_action: Optional[Union[MessageAction, UrlAction, AesAction]] = Field(
-        None, alias="successAction"
-    )
+    success_action: Optional[Union[MessageAction, UrlAction, AesAction]] = Field(None, alias="successAction")
     routes: List[List[LnurlPayRouteHop]] = []
     verify: Optional[str] = None
 
@@ -154,9 +152,7 @@ class LnurlWithdrawResponse(LnurlResponseModel):
     @validator("max_withdrawable")
     def max_less_than_min(cls, value, values, **kwargs):  # noqa
         if "min_withdrawable" in values and value < values["min_withdrawable"]:
-            raise ValueError(
-                "`max_withdrawable` cannot be less than `min_withdrawable`."
-            )
+            raise ValueError("`max_withdrawable` cannot be less than `min_withdrawable`.")
         return value
 
     @property
