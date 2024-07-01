@@ -2,7 +2,7 @@ import math
 from typing import List, Literal, Optional, Union
 
 from bolt11 import MilliSatoshi
-from pydantic import BaseModel, Field, validator
+from pydantic.v1 import BaseModel, Field, validator
 
 from .exceptions import LnurlResponseException
 from .types import (

@@ -5,7 +5,7 @@ from hashlib import sha256
 from typing import List, Optional, Tuple, Union
 from urllib.parse import parse_qs
 
-from pydantic import (
+from pydantic.v1 import (
     ConstrainedStr,
     HttpUrl,
     Json,
@@ -13,9 +13,9 @@ from pydantic import (
     parse_obj_as,
     validator,
 )
-from pydantic.errors import UrlHostTldError, UrlSchemeError
-from pydantic.networks import Parts
-from pydantic.validators import str_validator
+from pydantic.v1.errors import UrlHostTldError, UrlSchemeError
+from pydantic.v1.networks import Parts
+from pydantic.v1.validators import str_validator
 
 from .exceptions import InvalidLnurlPayMetadata
 from .helpers import _bech32_decode, _lnurl_clean, lnurl_decode

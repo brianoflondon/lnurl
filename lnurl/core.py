@@ -3,7 +3,7 @@ from typing import Any, Optional, Union
 import httpx
 from bolt11 import Bolt11Exception, MilliSatoshi
 from bolt11 import decode as bolt11_decode
-from pydantic import ValidationError
+from pydantic.v1 import ValidationError
 
 from .exceptions import InvalidLnurl, InvalidUrl, LnurlResponseException
 from .helpers import lnurlauth_signature, url_encode
@@ -66,7 +66,12 @@ async def handle(
     try:
         if "@" in bech32_lnurl:
             lnaddress = LnAddress(bech32_lnurl)
-            return await get(lnaddress.url, response_class=response_class, user_agent=user_agent, timeout=timeout)
+            return await get(
+                lnaddress.url,
+                response_class=response_class,
+                user_agent=user_agent,
+                timeout=timeout,
+            )
         lnurl = Lnurl(bech32_lnurl)
     except (ValidationError, ValueError):
         raise InvalidLnurl
