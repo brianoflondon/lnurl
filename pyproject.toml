@@ -1,10 +1,6 @@
 [tool.poetry]
 name = "lnurl"
-<<<<<<< HEAD
 version = "0.5.3"
-=======
-version = "0.5.2"
->>>>>>> edb48a4ffdd8e8eb93ff40f141df76a753a0f5ed
 description = "LNURL implementation for Python."
 authors = ["Alan Bits <alan@lnbits.com>"]
 license = "MIT"
