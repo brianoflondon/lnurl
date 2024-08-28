@@ -5,20 +5,24 @@ from hashlib import sha256
 from typing import List, Optional, Tuple, Union
 from urllib.parse import parse_qs
 
-from pydantic.v1 import (
-    ConstrainedStr,
+from annotated_types import Len
+from pydantic import (
+    AnyUrl,
+    BaseModel,
     HttpUrl,
     Json,
+    TypeAdapter,
     ValidationError,
-    parse_obj_as,
-    validator,
+    field_validator,
 )
-from pydantic.v1.errors import UrlHostTldError, UrlSchemeError
-from pydantic.v1.networks import Parts
-from pydantic.v1.validators import str_validator
+from typing_extensions import Annotated
 
 from .exceptions import InvalidLnurlPayMetadata
 from .helpers import _bech32_decode, _lnurl_clean, lnurl_decode
+
+# from pydantic.errors import UrlHostTldError, UrlSchemeError
+# from pydantic.networks import Parts
+# from pydantic.validators import str_validator
 
 
 def ctrl_characters_validator(value: str) -> str:
@@ -42,35 +46,41 @@ class ReprMixin:
             for outer_slot in [slot for slot in self.__slots__ if not slot.startswith("_")]  # type: ignore
             if getattr(self, outer_slot)  # type: ignore
         ]  # type: ignore
-        extra = ", " + ", ".join(f"{n}={getattr(self, n).__repr__()}" for n in attrs) if attrs else ""
+        extra = (
+            ", " + ", ".join(f"{n}={getattr(self, n).__repr__()}" for n in attrs)
+            if attrs
+            else ""
+        )
         return f"{self.__class__.__name__}({super().__repr__()}{extra})"
 
 
-class Bech32(ReprMixin, str):
-    """Bech32 string."""
+class Bech32(BaseModel):
+    bech32: str
+    hrp: Optional[str] = None
+    data: Optional[List[int]] = None
 
-    __slots__ = ("hrp", "data")
+    @field_validator("bech32")
+    def validate_bech32(cls, v):
+        if not isinstance(v, str):
+            raise ValueError("Must be a string")
+        hrp, data = _bech32_decode(v)
+        return v
 
-    def __new__(cls, bech32: str, **_) -> "Bech32":
-        return str.__new__(cls, bech32)
+    @field_validator("hrp", "data", mode="before")
+    def set_hrp_data(cls, v, values, field):
+        if "bech32" in values and (v is None):
+            hrp, data = _bech32_decode(values["bech32"])
+            if field.name == "hrp":
+                return hrp
+            else:
+                return data
+        return v
 
-    def __init__(self, bech32: str, *, hrp: Optional[str] = None, data: Optional[List[int]] = None):
-        str.__init__(bech32)
-        self.hrp, self.data = (hrp, data) if hrp and data else self.__get_data__(bech32)
+    def __str__(self):
+        return self.bech32
 
-    @classmethod
-    def __get_data__(cls, bech32: str) -> Tuple[str, List[int]]:
-        return _bech32_decode(bech32)
-
-    @classmethod
-    def __get_validators__(cls):
-        yield str_validator
-        yield cls.validate
-
-    @classmethod
-    def validate(cls, value: str) -> "Bech32":
-        hrp, data = cls.__get_data__(value)
-        return cls(value, hrp=hrp, data=data)
+    class Config:
+        arbitrary_types_allowed = True
 
 
 class Url(HttpUrl):
@@ -108,7 +118,7 @@ class DebugUrl(Url):
         return host, tld, host_type, rebuild
 
 
-class ClearnetUrl(Url):
+class ClearnetUrl(AnyUrl):
     """Secure web URL."""
 
     allowed_schemes = {"https"}
@@ -139,7 +149,14 @@ class LightningNodeUri(ReprMixin, str):
     def __new__(cls, uri: str, **kwargs) -> "LightningNodeUri":
         return str.__new__(cls, uri)
 
-    def __init__(self, uri: str, *, key: Optional[str] = None, ip: Optional[str] = None, port: Optional[str] = None):
+    def __init__(
+        self,
+        uri: str,
+        *,
+        key: Optional[str] = None,
+        ip: Optional[str] = None,
+        port: Optional[str] = None,
+    ):
         str.__init__(uri)
         self.key = key
         self.ip = ip
@@ -167,7 +184,12 @@ class Lnurl(ReprMixin, str):
     def __new__(cls, lightning: str, **_) -> "Lnurl":
         return str.__new__(cls, _lnurl_clean(lightning))
 
-    def __init__(self, lightning: str, *, url: Optional[Union[OnionUrl, ClearnetUrl, DebugUrl]] = None):
+    def __init__(
+        self,
+        lightning: str,
+        *,
+        url: Optional[Union[OnionUrl, ClearnetUrl, DebugUrl]] = None,
+    ):
         bech32 = _lnurl_clean(lightning)
         str.__init__(bech32)
         self.bech32 = Bech32(bech32)
@@ -176,7 +198,7 @@ class Lnurl(ReprMixin, str):
     @classmethod
     def __get_url__(cls, bech32: str) -> Union[OnionUrl, ClearnetUrl, DebugUrl]:
         url: str = lnurl_decode(bech32)
-        return parse_obj_as(Union[OnionUrl, ClearnetUrl, DebugUrl], url)  # type: ignore
+        return TypeAdapter.validate_python(Union[OnionUrl, ClearnetUrl, DebugUrl], url)  # type: ignore
 
     @classmethod
     def __get_validators__(cls):
@@ -189,7 +211,9 @@ class Lnurl(ReprMixin, str):
 
     @property
     def is_login(self) -> bool:
-        return "tag" in self.url.query_params and self.url.query_params["tag"] == "login"
+        return (
+            "tag" in self.url.query_params and self.url.query_params["tag"] == "login"
+        )
 
 
 class LnAddress(ReprMixin, str):
@@ -211,8 +235,13 @@ class LnAddress(ReprMixin, str):
     @classmethod
     def __get_url__(cls, address: str) -> Union[OnionUrl, ClearnetUrl, DebugUrl]:
         name, domain = address.split("@")
-        url = ("http://" if domain.endswith(".onion") else "https://") + domain + "/.well-known/lnurlp/" + name
-        return parse_obj_as(Union[OnionUrl, ClearnetUrl, DebugUrl], url)  # type: ignore
+        url = (
+            ("http://" if domain.endswith(".onion") else "https://")
+            + domain
+            + "/.well-known/lnurlp/"
+            + name
+        )
+        return TypeAdapter.validate_python(Union[OnionUrl, ClearnetUrl, DebugUrl], url)  # type: ignore
 
 
 class LnurlPayMetadata(ReprMixin, str):
@@ -230,7 +259,7 @@ class LnurlPayMetadata(ReprMixin, str):
     @classmethod
     def __validate_metadata__(cls, json_str: str) -> List[Tuple[str, str]]:
         try:
-            parse_obj_as(Json[List[Tuple[str, str]]], json_str)
+            TypeAdapter.validate_python(Json[List[Tuple[str, str]]], json_str)
             data = [(str(item[0]), str(item[1])) for item in json.loads(json_str)]
         except ValidationError:
             raise InvalidLnurlPayMetadata
@@ -276,10 +305,14 @@ class LnurlPayMetadata(ReprMixin, str):
         return self._list
 
 
-class InitializationVector(ConstrainedStr):
-    min_length = 24
-    max_length = 24
+InitializationVector = Annotated[str, Len(min_length=24), Len(max_length=24)]
+
+Max144Str = Annotated[str, Len(max_length=144)]
+
+# class InitializationVector(ConstrainedStr):
+#     min_length = 24
+#     max_length = 24
 
 
-class Max144Str(ConstrainedStr):
-    max_length = 144
+# class Max144Str(ConstrainedStr):
+#     max_length = 144

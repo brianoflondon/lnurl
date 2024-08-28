@@ -2,7 +2,7 @@ import math
 from typing import List, Literal, Optional, Union
 
 from bolt11 import MilliSatoshi
-from pydantic.v1 import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 from .exceptions import LnurlResponseException
 from .types import (
@@ -106,7 +106,7 @@ class LnurlPayResponse(LnurlResponseModel):
     max_sendable: MilliSatoshi = Field(..., alias="maxSendable", gt=0)
     metadata: LnurlPayMetadata
 
-    @validator("max_sendable")
+    @field_validator("max_sendable")
     def max_less_than_min(cls, value, values, **kwargs):  # noqa
         if "min_sendable" in values and value < values["min_sendable"]:
             raise ValueError("`max_sendable` cannot be less than `min_sendable`.")
@@ -149,7 +149,7 @@ class LnurlWithdrawResponse(LnurlResponseModel):
     max_withdrawable: MilliSatoshi = Field(..., alias="maxWithdrawable", gt=0)
     default_description: str = Field("", alias="defaultDescription")
 
-    @validator("max_withdrawable")
+    @field_validator("max_withdrawable")
     def max_less_than_min(cls, value, values, **kwargs):  # noqa
         if "min_withdrawable" in values and value < values["min_withdrawable"]:
             raise ValueError("`max_withdrawable` cannot be less than `min_withdrawable`.")

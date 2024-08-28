@@ -3,7 +3,7 @@ from typing import Any, Optional, Union
 import httpx
 from bolt11 import Bolt11Exception, MilliSatoshi
 from bolt11 import decode as bolt11_decode
-from pydantic.v1 import ValidationError
+from pydantic import ValidationError
 
 from .exceptions import InvalidLnurl, InvalidUrl, LnurlResponseException
 from .helpers import lnurlauth_signature, url_encode

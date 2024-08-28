@@ -1,7 +1,7 @@
 from typing import Union
 
 import pytest
-from pydantic.v1 import ValidationError, parse_obj_as
+from pydantic import ValidationError, parse_obj_as
 
 from lnurl.helpers import _lnurl_clean
 from lnurl.types import (
